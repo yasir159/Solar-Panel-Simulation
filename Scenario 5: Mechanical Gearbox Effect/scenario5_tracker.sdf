@@ -1,0 +1,173 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="tracker_world">
+
+    <physics name="tracker_physics" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster"/>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.5 -1.0</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="ground_link">
+        <collision name="ground_collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>10 10</size>
+            </plane>
+          </geometry>
+        </collision>
+
+        <visual name="ground_visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>10 10</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="solar_tracker">
+
+      <link name="base_pole">
+        <collision name="base_collision">
+          <pose>0 0 0.5 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+        </collision>
+
+        <visual name="base_visual">
+          <pose>0 0 0.5 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.2 0.2 0.2 1</ambient>
+            <diffuse>0.2 0.2 0.2 1</diffuse>
+          </material>
+        </visual>
+
+        <inertial>
+          <mass>5.0</mass>
+          <inertia>
+            <ixx>0.5</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.5</iyy>
+            <iyz>0</iyz>
+            <izz>0.05</izz>
+          </inertia>
+        </inertial>
+      </link>
+
+      <link name="panel_link">
+        <pose>0 0 1.05 0 0 0</pose>
+
+        <collision name="panel_collision">
+          <geometry>
+            <box>
+              <size>2.0 1.0 0.05</size>
+            </box>
+          </geometry>
+        </collision>
+
+        <visual name="panel_visual">
+          <geometry>
+            <box>
+              <size>2.0 1.0 0.05</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.0 0.2 0.8 1</ambient>
+            <diffuse>0.0 0.2 0.8 1</diffuse>
+          </material>
+        </visual>
+
+        <inertial>
+          <mass>10.0</mass>
+          <inertia>
+            <ixx>1.0</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>2.0</iyy>
+            <iyz>0</iyz>
+            <izz>3.0</izz>
+          </inertia>
+        </inertial>
+      </link>
+
+      <joint name="fixed_to_ground" type="fixed">
+        <parent>world</parent>
+        <child>base_pole</child>
+      </joint>
+
+      <joint name="tracking_joint" type="revolute">
+        <pose relative_to="base_pole">0 0 1.05 0 0 0</pose>
+        <parent>base_pole</parent>
+        <child>panel_link</child>
+
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-1.57</lower>
+            <upper>1.57</upper>
+            <effort>10.0</effort>
+            <velocity>0.1</velocity>
+          </limit>
+          <dynamics>
+            <friction>0.1</friction>
+            <damping>0.5</damping>
+          </dynamics>
+        </axis>
+      </joint>
+
+      <plugin
+        filename="gz-sim-joint-position-controller-system"
+        name="gz::sim::systems::JointPositionController">
+        <joint_name>tracking_joint</joint_name>
+        <topic>/model/solar_tracker/joint/tracking_joint/cmd_pos</topic>
+        <p_gain>18.0</p_gain>
+        <i_gain>0.0</i_gain>
+        <d_gain>11.5</d_gain>
+        <cmd_max>10.0</cmd_max>
+        <cmd_min>-10.0</cmd_min>
+      </plugin>
+
+      <plugin
+        filename="gz-sim-joint-state-publisher-system"
+        name="gz::sim::systems::JointStatePublisher">
+        <joint_name>tracking_joint</joint_name>
+      </plugin>
+
+    </model>
+  </world>
+</sdf>
